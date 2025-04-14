@@ -1,3 +1,17 @@
+"""
+文本到图像训练前处理模块：autoregressive/train/extract_codes_t2i.py
+用途：提取并存储用于训练文本到图像模型的图像编码
+功能：
+1. 使用矢量量化（VQ）模型将图像转换为离散编码
+2. 支持分布式处理，加速大规模数据集的处理
+3. 以优化格式存储图像编码，便于后续训练加载
+4. 提供批处理功能，支持对大型数据集进行分批次处理
+5. 保持与原始数据集的索引对应关系，方便关联文本和图像
+
+该模块是LlamaGen项目训练流程中的预处理步骤，通过将图像转换为离散编码，
+为自回归模型训练准备高质量的输入数据，避免在训练时重复执行昂贵的编码过程。
+"""
+
 # Modified from:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT/blob/main/extract_features.py
 import torch

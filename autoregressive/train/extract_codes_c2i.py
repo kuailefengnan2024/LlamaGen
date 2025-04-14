@@ -1,3 +1,18 @@
+"""
+类别到图像训练前处理模块：autoregressive/train/extract_codes_c2i.py
+用途：提取并存储用于训练类别到图像模型的图像编码
+功能：
+1. 使用矢量量化（VQ）模型将图像转换为离散编码
+2. 支持分布式处理，加速大规模数据集的处理
+3. 提供数据增强选项，包括翻转和十裁剪（ten-crop）
+4. 将类别标签和图像编码成对存储，保持对应关系
+5. 支持调试模式，便于开发和测试
+
+该模块是LlamaGen项目中类别到图像（Class-to-Image）训练流程的预处理步骤，
+通过将图像转换为离散编码并与类别标签配对，为后续自回归模型训练准备数据，
+提高训练效率并支持多种数据增强策略。
+"""
+
 # 修改自:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT/blob/main/extract_features.py
 import torch

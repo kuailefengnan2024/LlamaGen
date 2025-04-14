@@ -1,3 +1,17 @@
+"""
+文本到图像采样模块：autoregressive/sample/sample_t2i.py
+用途：使用训练好的自回归模型根据文本描述生成图像
+功能：
+1. 加载预训练的自回归GPT模型和VQ图像tokenizer
+2. 使用T5模型对输入文本进行嵌入处理
+3. 自回归生成图像的离散编码序列
+4. 通过VQ模型解码生成的序列为图像
+5. 支持分类器自由引导（CFG）和多种采样策略
+
+该模块是LlamaGen项目中文本到图像生成的主要应用入口，
+展示了如何使用训练好的模型从文本描述生成高质量图像的完整流程。
+"""
+
 import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True

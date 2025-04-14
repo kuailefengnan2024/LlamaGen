@@ -1,3 +1,17 @@
+"""
+模型定义模块：autoregressive/models/gpt.py
+用途：实现自回归GPT类模型的核心架构定义
+功能：
+1. 定义完整的Transformer架构，包括注意力机制、前馈网络、嵌入层等组件
+2. 支持类别标签和文本特征的嵌入，用于条件生成
+3. 实现RoPE位置编码、KV缓存等优化技术，提高模型效率
+4. 提供多种不同规模的模型配置（从GPT-B到GPT-7B）
+5. 支持类别条件（c2i）和文本条件（t2i）两种模型类型
+
+该模块是LlamaGen项目的核心组件，定义了用于生成任务的自回归Transformer模型架构，
+吸收了多个知名实现的优点，如llama、nanoGPT、DiT和PixArt等。
+"""
+
 # 修改自:
 #   VQGAN:    https://github.com/CompVis/taming-transformers/blob/master/taming/modules/transformer/mingpt.py
 #   DiT:      https://github.com/facebookresearch/DiT/blob/main/models.py  

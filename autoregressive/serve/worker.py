@@ -1,3 +1,18 @@
+"""
+GPU工作节点模块：autoregressive/serve/worker.py
+用途：实现高效的GPU模型推理和KV缓存管理
+功能：
+1. 管理模型在GPU上的执行和内存分配
+2. 实现高效的KV缓存管理和交换机制
+3. 支持分布式推理中的模型分区
+4. 处理模型加载、内存分析和温预热
+5. 支持LoRA参数高效切换和多模态输入
+
+该模块是LlamaGen项目服务化架构中的核心组件，
+负责底层GPU资源管理和高效推理执行，
+扩展了vLLM的Worker类以适应LlamaGen的特定需求。
+"""
+
 """A GPU worker class."""
 import gc
 import os

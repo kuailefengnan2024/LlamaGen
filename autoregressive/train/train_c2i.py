@@ -1,3 +1,17 @@
+"""
+类别到图像训练模块：autoregressive/train/train_c2i.py
+用途：训练类别条件的自回归图像生成模型
+功能：
+1. 实现分布式训练（DDP）框架，提高多GPU训练效率
+2. 提供优化器创建函数，合理处理权重衰减和参数分组
+3. 支持EMA（指数移动平均）模型维护，提高生成质量稳定性
+4. 实现混合精度训练，梯度裁剪等训练优化技术
+5. 处理检查点保存和恢复，支持训练中断后继续训练
+
+该模块是LlamaGen项目中训练类别到图像（Class-to-Image）模型的主要入口，
+整合了完整的训练流程，包括模型初始化、数据加载、优化过程和模型保存。
+"""
+
 # 修改自:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT/blob/main/train.py
 #   nanoGPT: https://github.com/karpathy/nanoGPT/blob/master/model.py

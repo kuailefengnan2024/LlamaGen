@@ -1,3 +1,17 @@
+"""
+文本到图像训练模块：autoregressive/train/train_t2i.py
+用途：训练文本条件的自回归图像生成模型
+功能：
+1. 支持分布式训练（DDP），高效利用多GPU资源
+2. 加载预训练的VQ模型进行图像标记化处理
+3. 实现文本条件下图像token的自回归预测训练
+4. 支持混合精度训练，梯度裁剪和模型编译优化
+5. 提供丰富的训练参数设置和定期检查点保存
+
+该模块是LlamaGen项目中训练文本到图像（Text-to-Image）模型的主要入口，
+处理数据加载、损失计算、参数优化和模型保存等完整训练流程。
+"""
+
 # 修改自:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT
 #   nanoGPT: https://github.com/karpathy/nanoGPT

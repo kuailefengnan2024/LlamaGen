@@ -1,3 +1,16 @@
+"""
+生成模块：autoregressive/models/generate.py
+用途：实现自回归模型的文本或图像生成功能的核心组件
+功能：
+1. 提供各种采样策略（top-k, top-p/nucleus）的实现
+2. 实现高效的解码函数，包括单个token解码和批量token解码
+3. 支持有条件和无条件生成，并实现分类器自由引导（CFG）
+4. 处理预填充、掩码和缓存等优化技术，提高生成效率
+5. 作为模型推理阶段的核心函数，被训练和采样脚本调用
+
+该模块是LlamaGen项目中连接模型定义和实际采样应用的桥梁，实现了高效的自回归采样算法。
+"""
+
 # 修改自:
 #   gpt-fast: https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
 #   DiT:      https://github.com/facebookresearch/DiT/blob/main/models.py

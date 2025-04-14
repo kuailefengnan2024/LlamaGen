@@ -1,3 +1,18 @@
+"""
+高性能LLM服务模块：autoregressive/serve/llm.py
+用途：提供高效的模型推理和批处理服务框架
+功能：
+1. 基于vLLM的高性能LLM推理引擎的封装接口
+2. 支持连续批处理（continuous batching）优化推理性能
+3. 提供灵活的采样参数配置（温度、top-k、top-p等）
+4. 支持多模态数据处理（图像+文本）
+5. 支持LoRA微调模型加载和推理
+
+该模块是LlamaGen项目部署和服务化的核心组件，
+提供了高效的模型推理接口，用于处理大规模请求，
+并支持基于KV缓存的高效GPU内存管理。
+"""
+
 # Modified from:
 #   vLLM:    https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
 from typing import List, Optional, Union

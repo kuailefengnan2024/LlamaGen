@@ -1,3 +1,15 @@
+"""
+Hugging Face模型兼容模块：autoregressive/models/gpt_hf.py
+用途：将LlamaGen模型与Hugging Face生态系统集成
+功能：
+1. 继承基本Transformer模型，扩展HuggingFace的PyTorchModelHubMixin
+2. 定义模型配置，支持不同规模的模型（从B到7B）
+3. 添加HuggingFace所需的元数据（仓库URL、许可证、标签等）
+4. 使LlamaGen模型能够轻松地上传、下载和共享到HuggingFace Hub
+
+该模块使LlamaGen项目能够与当前最流行的模型共享平台集成，方便模型的分发和社区合作。
+"""
+
 from autoregressive.models.gpt import ModelArgs, Transformer
 from huggingface_hub import PyTorchModelHubMixin
 

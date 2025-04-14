@@ -1,3 +1,18 @@
+"""
+类别到图像采样模块：autoregressive/sample/sample_c2i.py
+用途：使用训练好的自回归模型根据类别标签生成图像
+功能：
+1. 加载预训练的自回归GPT模型和VQ图像tokenizer
+2. 接收类别标签作为条件输入
+3. 自回归生成图像的离散编码序列
+4. 通过VQ模型解码生成的序列为图像
+5. 支持分类器自由引导（CFG）和多种采样策略
+
+该模块是LlamaGen项目中类别到图像生成的主要应用入口，
+展示了如何使用训练好的模型从类别标签生成高质量图像的完整流程。
+支持多种模型加载格式（DDP、FSDP、DeepSpeed等）。
+"""
+
 # 修改自:
 #   DiT:  https://github.com/facebookresearch/DiT/blob/main/sample.py
 import torch

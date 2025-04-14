@@ -1,3 +1,18 @@
+"""
+分布式类别到图像采样模块：autoregressive/sample/sample_c2i_ddp.py
+用途：使用分布式处理高效地从类别标签批量生成图像
+功能：
+1. 支持分布式数据并行（DDP）进行高效采样
+2. 批量生成大量图像用于模型评估（如FID分数计算）
+3. 自动在多个GPU上平衡工作负载
+4. 将生成的图像保存为单独的PNG文件和合并的NPZ文件
+5. 支持图像缩放、CFG和多种采样策略
+
+该模块是LlamaGen项目中用于大规模类别条件图像生成的高效工具，
+特别适合用于模型评估和定量性能测试，能够充分利用多GPU环境。
+同时支持多种模型加载格式（DDP、FSDP、DeepSpeed等）。
+"""
+
 # Modified from:
 #   DiT:  https://github.com/facebookresearch/DiT/blob/main/sample_ddp.py
 import torch

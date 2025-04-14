@@ -1,3 +1,17 @@
+"""
+分布式文本到图像采样模块：autoregressive/sample/sample_t2i_ddp.py
+用途：使用分布式处理高效地从文本描述批量生成图像
+功能：
+1. 支持分布式数据并行（DDP）进行高效采样
+2. 批量处理大量文本提示，用于评估或演示
+3. 自动在多个GPU上平衡工作负载
+4. 保存生成的图像和相关元数据（JSON和文本文件）
+5. 支持自定义采样参数和批量大小设置
+
+该模块是LlamaGen项目中用于大规模图像生成的高效工具，
+特别适合用于模型评估、数据集生成和展示目的，能够充分利用多GPU环境。
+"""
+
 import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
