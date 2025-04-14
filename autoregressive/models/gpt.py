@@ -1,4 +1,4 @@
-# Modified from:
+# 修改自:
 #   VQGAN:    https://github.com/CompVis/taming-transformers/blob/master/taming/modules/transformer/mingpt.py
 #   DiT:      https://github.com/facebookresearch/DiT/blob/main/models.py  
 #   nanoGPT:  https://github.com/karpathy/nanoGPT/blob/master/model.py
@@ -26,7 +26,7 @@ class ModelArgs:
     n_layer: int = 32
     n_head: int = 32
     n_kv_head: Optional[int] = None
-    multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
+    multiple_of: int = 256  # 使SwiGLU隐藏层大小为大的2的幂的倍数
     ffn_dim_multiplier: Optional[float] = None
     rope_base: float = 10000
     norm_eps: float = 1e-5
@@ -51,11 +51,11 @@ class ModelArgs:
 
 
 #################################################################################
-#                      Embedding Layers for Class Labels                        #
+#                      类别标签的嵌入层                                           #
 #################################################################################
 class LabelEmbedder(nn.Module):
     """
-    Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
+    将类别标签嵌入到向量表示中。还处理标签丢弃以实现无分类器引导。
     """
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
@@ -66,7 +66,7 @@ class LabelEmbedder(nn.Module):
 
     def token_drop(self, labels, force_drop_ids=None):
         """
-        Drops labels to enable classifier-free guidance.
+        丢弃标签以启用无分类器引导。
         """
         if force_drop_ids is None:
             drop_ids = torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
@@ -84,11 +84,11 @@ class LabelEmbedder(nn.Module):
 
 
 #################################################################################
-#                      Embedding Layers for Text Feature                        #
+#                      文本特征的嵌入层                                           #
 #################################################################################
 class CaptionEmbedder(nn.Module):
     """
-    Embeds text caption into vector representations. Also handles label dropout for classifier-free guidance.
+    将文本标题嵌入到向量表示中。还处理标签丢弃以实现无分类器引导。
     """
     def __init__(self, in_channels, hidden_size, uncond_prob, token_num=120):
         super().__init__()
@@ -98,7 +98,7 @@ class CaptionEmbedder(nn.Module):
 
     def token_drop(self, caption, force_drop_ids=None):
         """
-        Drops labels to enable classifier-free guidance.
+        丢弃标签以启用无分类器引导。
         """
         if force_drop_ids is None:
             drop_ids = torch.rand(caption.shape[0], device=caption.device) < self.uncond_prob
@@ -132,7 +132,7 @@ class MLP(nn.Module):
 
 
 #################################################################################
-#                                  GPT Model                                    #
+#                                  GPT 模型                                      #
 #################################################################################
 class RMSNorm(torch.nn.Module):
     def __init__(self, dim: int, eps: float = 1e-5):
@@ -153,7 +153,7 @@ class FeedForward(nn.Module):
         super().__init__()
         hidden_dim = 4 * config.dim
         hidden_dim = int(2 * hidden_dim / 3)
-        # custom dim factor multiplier
+        # 自定义维度因子乘数
         if config.ffn_dim_multiplier is not None:
             hidden_dim = int(config.ffn_dim_multiplier * hidden_dim)
         hidden_dim = find_multiple(hidden_dim, config.multiple_of)
@@ -195,12 +195,12 @@ class Attention(nn.Module):
         self.n_kv_head = config.n_kv_head if config.n_kv_head is not None else config.n_head
         total_kv_dim = (self.n_head + 2 * self.n_kv_head) * self.head_dim
 
-        # key, query, value projections for all heads, but in a batch
+        # 批量处理所有头的键、查询、值投影
         self.wqkv = nn.Linear(config.dim, total_kv_dim, bias=False)
         self.wo = nn.Linear(config.dim, config.dim, bias=False)
         self.kv_cache = None
 
-        # regularization
+        # 正则化
         self.attn_dropout_p = config.attn_dropout_p
         self.resid_dropout = nn.Dropout(config.resid_dropout_p)
 
@@ -232,7 +232,7 @@ class Attention(nn.Module):
         output = F.scaled_dot_product_attention(
             xq, keys, values, 
             attn_mask=mask, 
-            is_causal=True if mask is None else False, # is_causal=False is for KV cache
+            is_causal=True if mask is None else False, # is_causal=False用于KV缓存
             dropout_p=self.attn_dropout_p if self.training else 0)            
         
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, self.dim)
@@ -272,36 +272,36 @@ class Transformer(nn.Module):
         elif self.model_type == 't2i':
             self.cls_embedding = CaptionEmbedder(config.caption_dim, config.dim, config.class_dropout_prob)
         else:
-            raise Exception("please check model type")
+            raise Exception("请检查模型类型")
         self.tok_embeddings = nn.Embedding(config.vocab_size, config.dim)
         self.tok_dropout = nn.Dropout(config.token_dropout_p)
 
-        # transformer blocks
+        # Transformer块
         dpr = [x.item() for x in torch.linspace(0, config.drop_path_rate, config.n_layer)]
         self.layers = torch.nn.ModuleList()
         for layer_id in range(config.n_layer):
             self.layers.append(TransformerBlock(config, dpr[layer_id]))
 
-        # output layer
+        # 输出层
         self.norm = RMSNorm(config.dim, eps=config.norm_eps)
         self.output = nn.Linear(config.dim, config.vocab_size, bias=False)
 
-        # 2d rotary pos embedding
+        # 2D旋转位置嵌入
         grid_size = int(self.block_size ** 0.5)
         assert grid_size * grid_size == self.block_size
         self.freqs_cis = precompute_freqs_cis_2d(grid_size, self.config.dim // self.config.n_head, self.config.rope_base, self.cls_token_num)
         
-        # KVCache
+        # KV缓存
         self.max_batch_size = -1
         self.max_seq_length = -1
 
         self.initialize_weights()
 
     def initialize_weights(self):        
-        # Initialize nn.Linear and nn.Embedding
+        # 初始化nn.Linear和nn.Embedding
         self.apply(self._init_weights)
 
-        # Zero-out output layers:
+        # 将输出层置零:
         nn.init.constant_(self.output.weight, 0)
 
     def _init_weights(self, module):
@@ -338,16 +338,16 @@ class Transformer(nn.Module):
         mask: Optional[torch.Tensor] = None,
         valid: Optional[torch.Tensor] = None,
     ):
-        if idx is not None and cond_idx is not None: # training or naive inference
+        if idx is not None and cond_idx is not None: # 训练或基础推理
             cond_embeddings = self.cls_embedding(cond_idx, train=self.training)[:,:self.cls_token_num]
             token_embeddings = self.tok_embeddings(idx)
             token_embeddings = torch.cat((cond_embeddings, token_embeddings), dim=1)
             h = self.tok_dropout(token_embeddings)
             self.freqs_cis = self.freqs_cis.to(h.device)
         else:
-            if cond_idx is not None: # prefill in inference
+            if cond_idx is not None: # 推理中的预填充
                 token_embeddings = self.cls_embedding(cond_idx, train=self.training)[:,:self.cls_token_num]
-            else: # decode_n_tokens(kv cache) in inference
+            else: # 推理中的decode_n_tokens(kv缓存)
                 token_embeddings = self.tok_embeddings(idx)
             
             bs = token_embeddings.shape[0]
@@ -359,18 +359,18 @@ class Transformer(nn.Module):
             freqs_cis = self.freqs_cis[:token_embeddings.shape[1]]
         else:
             freqs_cis = self.freqs_cis[input_pos]
-        # transformer blocks
+        # Transformer块
         for layer in self.layers:
             h = layer(h, freqs_cis, input_pos, mask)
         
-        # output layers
+        # 输出层
         h = self.norm(h)
         logits = self.output(h).float()
         
         if self.training:
             logits = logits[:, self.cls_token_num - 1:].contiguous()
 
-        # if we are given some desired targets also calculate the loss
+        # 如果给定了目标，也计算损失
         loss = None
         if valid is not None:
             loss_all = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduction='none')
@@ -388,7 +388,7 @@ class Transformer(nn.Module):
 
 
 #################################################################################
-#                      Rotary Positional Embedding Functions                    #
+#                      旋转位置嵌入函数                                           #
 #################################################################################
 # https://github.com/pytorch-labs/gpt-fast/blob/main/model.py 
 def precompute_freqs_cis(seq_len: int, n_elem: int, base: int = 10000, cls_token_num=120):
@@ -402,7 +402,7 @@ def precompute_freqs_cis(seq_len: int, n_elem: int, base: int = 10000, cls_token
 
 
 def precompute_freqs_cis_2d(grid_size: int, n_elem: int, base: int = 10000, cls_token_num=120):
-    # split the dimension into half, one for x and one for y
+    # 将维度分成两半，一半用于x，一半用于y
     half_dim = n_elem // 2
     freqs = 1.0 / (base ** (torch.arange(0, half_dim, 2)[: (half_dim // 2)].float() / half_dim))
     t = torch.arange(grid_size, device=freqs.device)
@@ -432,9 +432,9 @@ def apply_rotary_emb(x: torch.Tensor, freqs_cis: torch.Tensor):
 
 
 #################################################################################
-#                                GPT Configs                                    #
+#                                GPT 配置                                        #
 #################################################################################
-### text-conditional
+### 文本条件模型
 def GPT_7B(**kwargs):
     return Transformer(ModelArgs(n_layer=32, n_head=32, dim=4096, **kwargs)) # 6.6B
 
@@ -444,7 +444,7 @@ def GPT_3B(**kwargs):
 def GPT_1B(**kwargs):
     return Transformer(ModelArgs(n_layer=22, n_head=32, dim=2048, **kwargs)) # 1.2B
 
-### class-conditional
+### 类别条件模型
 def GPT_XXXL(**kwargs):
     return Transformer(ModelArgs(n_layer=48, n_head=40, dim=2560, **kwargs)) # 3.9B
 

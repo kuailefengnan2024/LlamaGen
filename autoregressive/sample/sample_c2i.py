@@ -1,4 +1,4 @@
-# Modified from:
+# 修改自:
 #   DiT:  https://github.com/facebookresearch/DiT/blob/main/sample.py
 import torch
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -16,14 +16,14 @@ from autoregressive.models.generate import generate
 
 
 def main(args):
-    # Setup PyTorch:
+    # 设置PyTorch:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.set_grad_enabled(False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # create and load model
+    # 创建并加载模型
     vq_model = VQ_models[args.vq_model](
         codebook_size=args.codebook_size,
         codebook_embed_dim=args.codebook_embed_dim)
@@ -34,7 +34,7 @@ def main(args):
     del checkpoint
     print(f"image tokenizer is loaded")
 
-    # create and load gpt model
+    # 创建并加载gpt模型
     precision = {'none': torch.float32, 'bf16': torch.bfloat16, 'fp16': torch.float16}[args.precision]
     latent_size = args.image_size // args.downsample_size
     gpt_model = GPT_models[args.gpt_model](
@@ -69,11 +69,11 @@ def main(args):
             gpt_model,
             mode="reduce-overhead",
             fullgraph=True
-        ) # requires PyTorch 2.0 (optional)
+        ) # 需要PyTorch 2.0（可选）
     else:
         print(f"no need to compile model in demo") 
 
-    # Labels to condition the model with (feel free to change):
+    # 用于条件模型的标签（可以随意更改）:
     class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
     c_indices = torch.tensor(class_labels, device=device)
     qzshape = [len(class_labels), args.codebook_embed_dim, latent_size, latent_size]
@@ -89,11 +89,11 @@ def main(args):
     print(f"gpt sampling takes about {sampling_time:.2f} seconds.")    
     
     t2 = time.time()
-    samples = vq_model.decode_code(index_sample, qzshape) # output value is between [-1, 1]
+    samples = vq_model.decode_code(index_sample, qzshape) # 输出值在[-1, 1]之间
     decoder_time = time.time() - t2
     print(f"decoder takes about {decoder_time:.2f} seconds.")
 
-    # Save and display images:
+    # 保存并显示图像:
     save_image(samples, "sample_{}.png".format(args.gpt_type), nrow=4, normalize=True, value_range=(-1, 1))
     print(f"image is saved to sample_{args.gpt_type}.png")
 
@@ -102,23 +102,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpt-model", type=str, choices=list(GPT_models.keys()), default="GPT-B")
     parser.add_argument("--gpt-ckpt", type=str, default=None)
-    parser.add_argument("--gpt-type", type=str, choices=['c2i', 't2i'], default="c2i", help="class-conditional or text-conditional")
+    parser.add_argument("--gpt-type", type=str, choices=['c2i', 't2i'], default="c2i", help="类别条件或文本条件")
     parser.add_argument("--from-fsdp", action='store_true')
-    parser.add_argument("--cls-token-num", type=int, default=1, help="max token number of condition input")
+    parser.add_argument("--cls-token-num", type=int, default=1, help="条件输入的最大标记数")
     parser.add_argument("--precision", type=str, default='bf16', choices=["none", "fp16", "bf16"]) 
     parser.add_argument("--compile", action='store_true', default=False)
     parser.add_argument("--vq-model", type=str, choices=list(VQ_models.keys()), default="VQ-16")
-    parser.add_argument("--vq-ckpt", type=str, default=None, help="ckpt path for vq model")
-    parser.add_argument("--codebook-size", type=int, default=16384, help="codebook size for vector quantization")
-    parser.add_argument("--codebook-embed-dim", type=int, default=8, help="codebook dimension for vector quantization")
+    parser.add_argument("--vq-ckpt", type=str, default=None, help="vq模型的检查点路径")
+    parser.add_argument("--codebook-size", type=int, default=16384, help="向量量化的码本大小")
+    parser.add_argument("--codebook-embed-dim", type=int, default=8, help="向量量化的码本维度")
     parser.add_argument("--image-size", type=int, choices=[256, 384, 512], default=384)
     parser.add_argument("--downsample-size", type=int, choices=[8, 16], default=16)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--cfg-interval", type=float, default=-1)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--top-k", type=int, default=2000,help="top-k value to sample with")
-    parser.add_argument("--temperature", type=float, default=1.0, help="temperature value to sample with")
-    parser.add_argument("--top-p", type=float, default=1.0, help="top-p value to sample with")
+    parser.add_argument("--top-k", type=int, default=2000,help="采样使用的top-k值")
+    parser.add_argument("--temperature", type=float, default=1.0, help="采样使用的温度值")
+    parser.add_argument("--top-p", type=float, default=1.0, help="采样使用的top-p值")
     args = parser.parse_args()
     main(args)

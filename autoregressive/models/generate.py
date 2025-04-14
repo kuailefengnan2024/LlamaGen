@@ -1,4 +1,4 @@
-# Modified from:
+# 修改自:
 #   gpt-fast: https://github.com/pytorch-labs/gpt-fast/blob/main/generate.py
 #   DiT:      https://github.com/facebookresearch/DiT/blob/main/models.py
 import torch
@@ -9,10 +9,10 @@ import torch._inductor.config
 import copy
 # torch._inductor.config.coordinate_descent_tuning = True
 # torch._inductor.config.triton.unique_kernel_names = True
-# torch._inductor.config.fx_graph_cache = True # Experimental feature to reduce compilation times, will be on by default in future
+# torch._inductor.config.fx_graph_cache = True # 实验性功能，用于减少编译时间，未来将默认启用
 
 
-### from https://huggingface.co/transformers/v3.2.0/_modules/transformers/generation_utils.html
+### 来自 https://huggingface.co/transformers/v3.2.0/_modules/transformers/generation_utils.html
 def top_k_top_p_filtering(
     logits,
     top_k: int = 0,
@@ -20,18 +20,18 @@ def top_k_top_p_filtering(
     filter_value: float = -float("Inf"),
     min_tokens_to_keep: int = 1,
 ):
-    """Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
-    Args:
-        logits: logits distribution shape (batch size, vocabulary size)
-        if top_k > 0: keep only top k tokens with highest probability (top-k filtering).
-        if top_p < 1.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
-            Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
-        Make sure we keep at least min_tokens_to_keep per batch example in the output
-    From: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
+    """使用top-k和/或nucleus(top-p)过滤对数分布
+    参数：
+        logits: 对数分布形状（批量大小，词汇表大小）
+        如果top_k > 0：只保留概率最高的top k个标记（top-k过滤）。
+        如果top_p < 1.0：保留累积概率 >= top_p的顶部标记（nucleus过滤）。
+            Nucleus过滤在Holtzman等人的论文中有描述。(http://arxiv.org/abs/1904.09751)
+        确保在输出中每个批次示例至少保留min_tokens_to_keep个标记
+    来源: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
     """
     if top_k > 0:
-        top_k = min(max(top_k, min_tokens_to_keep), logits.size(-1))  # Safety check
-        # Remove all tokens with a probability less than the last token of the top-k
+        top_k = min(max(top_k, min_tokens_to_keep), logits.size(-1))  # 安全检查
+        # 移除概率小于top-k最后一个标记的所有标记
         indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
         logits[indices_to_remove] = filter_value
 
@@ -39,16 +39,16 @@ def top_k_top_p_filtering(
         sorted_logits, sorted_indices = torch.sort(logits, descending=True)
         cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
 
-        # Remove tokens with cumulative probability above the threshold (token with 0 are kept)
+        # 移除累积概率高于阈值的标记（保留概率为0的标记）
         sorted_indices_to_remove = cumulative_probs > top_p
         if min_tokens_to_keep > 1:
-            # Keep at least min_tokens_to_keep (set to min_tokens_to_keep-1 because we add the first one below)
+            # 至少保留min_tokens_to_keep个标记（因为我们在下面添加第一个，所以设置为min_tokens_to_keep-1）
             sorted_indices_to_remove[..., :min_tokens_to_keep] = 0
-        # Shift the indices to the right to keep also the first token above the threshold
+        # 将索引向右移动以保留阈值以上的第一个标记
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
         sorted_indices_to_remove[..., 0] = 0
 
-        # scatter sorted tensors to original indexing
+        # 将排序的张量散布回原始索引
         indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
         logits[indices_to_remove] = filter_value
     return logits
@@ -109,7 +109,7 @@ def decode_n_tokens(
     new_tokens, new_probs = [], []
     cfg_flag = True
     for i in range(num_new_tokens):
-        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True): # Actually better for Inductor to codegen attention here
+        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True): # 实际上对Inductor在这里生成注意力代码更好
             if cfg_interval > -1 and i > cfg_interval:
                 cfg_flag = False
             next_token, next_prob = decode_one_token(
@@ -140,7 +140,7 @@ def generate(model, cond, max_new_tokens, emb_masks=None, cfg_scale=1.0, cfg_int
             cond_combined = cond
         T = cond.shape[1]      
     else:
-        raise Exception("please check model type")
+        raise Exception("请检查模型类型")
 
     T_new = T + max_new_tokens
     max_seq_length = T_new
@@ -162,7 +162,7 @@ def generate(model, cond, max_new_tokens, emb_masks=None, cfg_scale=1.0, cfg_int
         eye_matrix = torch.eye(model.causal_mask.size(1), model.causal_mask.size(2), device=device)
         model.causal_mask[:] = model.causal_mask * (1 - eye_matrix) + eye_matrix
     
-    # create an empty tensor of the expected final shape and fill in the current tokens
+    # 创建预期最终形状的空张量并填入当前标记
     seq = torch.empty((max_batch_size, T_new), dtype=torch.int, device=device)
 
     input_pos = torch.arange(0, T, device=device)

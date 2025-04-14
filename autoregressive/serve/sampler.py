@@ -1,4 +1,4 @@
-"""A layer that samples the next tokens from the model's outputs."""
+"""一个从模型输出中采样下一个标记的层。"""
 import itertools
 from typing import Dict, List, Optional, Tuple
 
@@ -15,32 +15,26 @@ from vllm.sequence import (Logprob, PromptLogprobs, SampleLogprobs,
 
 
 class Sampler(nn.Module):
-    """Samples the next tokens from the model's outputs.
+    """从模型的输出中采样下一个标记。
 
-    This layer does the following:
-    1. Discard the hidden states that are not used for sampling (i.e., all
-        tokens except the final one in each prompt).
-    2. Compute the logits for the next tokens.
-    3. Apply presence, frequency and repetition penalties.
-    4. Apply temperature scaling.
-    5. Apply top-p and top-k truncation.
-    6. Sample the next tokens.
-    Here, each sequence group within the batch can have different sampling
-    parameters (e.g., sampling method, temperature, top-p, top-k, etc.).
+    这一层做以下工作：
+    1. 丢弃不用于采样的隐藏状态（即除了每个提示中的最后一个之外的所有标记）。
+    2. 计算下一个标记的logits。
+    3. 应用存在、频率和重复惩罚。
+    4. 应用温度缩放。
+    5. 应用top-p和top-k截断。
+    6. 采样下一个标记。
+    在这里，批次中的每个序列组可以有不同的采样参数（例如，采样方法、温度、top-p、top-k等）。
 
-    The structure of the logits tensor is coupled with the seq_groups in
-    sampling_metadata. Typically, each sequence in each seq_group has one row in
-    logits for the next token to be sampled; however, for a seq_group with a
-    prompt request with the prompt_logprobs sampling parameter, there are rows
-    in logits for each token in the input prompt.
+    logits张量的结构与sampling_metadata中的seq_groups相关联。通常，每个seq_group中的每个序列在logits中有一行用于下一个要采样的标记；
+    然而，对于带有prompt_logprobs采样参数的提示请求的seq_group，logits中有用于输入提示中每个标记的行。
     """
 
     def __init__(self, cfg_scale=1.0):
         super().__init__()
         self.cfg_scale = cfg_scale
-        # Whether or not the SamplerOutput should have on-device tensors
-        # containing the sampled token ids and probabilities. This is used by
-        # speculative decoding.
+        # 是否SamplerOutput应该包含包含采样的标记ID和概率的设备上张量。
+        # 这被推测性解码所使用。
         self.include_gpu_probs_tensor = False
 
     def forward(
@@ -57,16 +51,15 @@ class Sampler(nn.Module):
             logits = uncond_logits + (cond_logits - uncond_logits) * self.cfg_scale
             logits = torch.cat([logits, logits], dim=0)
         
-        # Apply min_tokens penalty which sets stop tokens to -inf if min_tokens
-        # have not been generated yet
+        # 应用min_tokens惩罚，如果尚未生成min_tokens，则将停止标记设置为-inf
         logits = _apply_min_tokens_penalty(logits, sampling_metadata)
 
-        # Prepare sampling tensors with pinned memory to avoid blocking.
+        # 准备带有固定内存的采样张量，以避免阻塞。
         (sampling_tensors, do_penalties, do_top_p_top_k,
          do_min_p) = SamplingTensors.from_sampling_metadata(
              sampling_metadata, vocab_size, logits.device, logits.dtype)
 
-        # Apply presence and frequency penalties.
+        # 应用存在和频率惩罚。
         if do_penalties:
             logits = _apply_penalties(logits, sampling_tensors.prompt_tokens,
                                       sampling_tensors.output_tokens,
@@ -74,8 +67,8 @@ class Sampler(nn.Module):
                                       sampling_tensors.frequency_penalties,
                                       sampling_tensors.repetition_penalties)
 
-        # Apply temperature scaling.
-        # Use in-place division to avoid creating a new tensor.
+        # 应用温度缩放。
+        # 使用就地除法以避免创建新的张量。
         logits.div_(sampling_tensors.temperatures.unsqueeze_(dim=1))
 
         if do_top_p_top_k:
@@ -85,14 +78,14 @@ class Sampler(nn.Module):
         if do_min_p:
             logits = _apply_min_p(logits, sampling_tensors.min_ps)
 
-        # We use float32 for probabilities and log probabilities.
-        # Compute the probabilities.
+        # 我们使用float32来表示概率和对数概率。
+        # 计算概率。
         probs = torch.softmax(logits, dim=-1, dtype=torch.float)
-        # Compute the log probabilities.
-        # Use log_softmax to ensure numerical stability.
+        # 计算对数概率。
+        # 使用log_softmax确保数值稳定性。
         logprobs = torch.log_softmax(logits, dim=-1, dtype=torch.float)
 
-        # Sample the next tokens.
+        # 采样下一个标记。
         sample_results, maybe_sampled_tokens_tensor = _sample(
             probs,
             logprobs,
@@ -115,7 +108,7 @@ class Sampler(nn.Module):
         else:
             on_device_tensors = None
 
-        # Get the logprobs query results.
+        # 获取logprobs查询结果。
         prompt_logprobs, sample_logprobs = _get_logprobs(
             logprobs, sampling_metadata, sample_results)
         return _build_sampler_output(sample_results,
@@ -126,17 +119,13 @@ class Sampler(nn.Module):
 
     @property
     def _should_modify_greedy_probs_inplace(self) -> bool:
-        """Whether or not the sampler should modify the probability distribution
-        of greedily-sampled tokens such that multinomial sampling would sample
-        the greedily-sampled token.
+        """采样器是否应该修改贪婪采样标记的概率分布，以便多项式采样会采样贪婪采样的标记。
 
-        In other words, if True then we set the probability of the greedily-
-        sampled token to 1.
+        换句话说，如果为True，那么我们将贪婪采样标记的概率设置为1。
 
-        This is used by speculative decoding, which requires that the sampling
-        method be encoded into the probability distribution.
+        这被推测性解码所使用，它要求采样方法被编码到概率分布中。
         """
-        # Modify greedy probs if include_gpu_probs_tensor is set.
+        # 如果设置了include_gpu_probs_tensor，则修改贪婪概率。
         return self.include_gpu_probs_tensor
 
 
@@ -145,8 +134,8 @@ def _get_bin_counts_and_mask(
     vocab_size: int,
     num_seqs: int,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    # Compute the bin counts for the tokens.
-    # vocab_size + 1 for padding.
+    # 计算标记的箱计数。
+    # vocab_size + 1用于填充。
     bin_counts = torch.zeros((num_seqs, vocab_size + 1),
                              dtype=torch.long,
                              device=tokens.device)
@@ -161,14 +150,13 @@ def _apply_min_tokens_penalty(
     logits: torch.Tensor,
     sampling_metadata: SamplingMetadata,
 ) -> torch.Tensor:
-    # list of indices in logits that will be set to -inf
+    # 将在logits中设置为-inf的索引列表
     logits_to_penalize = []
     start_idx = 0
     for i, seq_group in enumerate(sampling_metadata.seq_groups):
         seq_ids, sampling_params = seq_group
 
-        # handle prompt_logprobs by skipping rows in logits added for the prompt
-        # tokens (prompt logprobs are not penalized)
+        # 通过跳过logits中为提示标记添加的行来处理prompt_logprobs（提示logprobs不受惩罚）
         if (i < sampling_metadata.num_prompts
                 and sampling_params.prompt_logprobs is not None):
             assert len(seq_ids) == 1
@@ -183,20 +171,20 @@ def _apply_min_tokens_penalty(
                     seqs_to_penalize.append(i)
 
             if seqs_to_penalize:
-                # convert to the index into logits
+                # 转换为logits中的索引
                 seqs_to_penalize = [start_idx + i for i in seqs_to_penalize]
-                # use set() to remove any duplicates
+                # 使用set()删除任何重复项
                 token_ids_to_penalize = set(sampling_params.stop_token_ids +
                                             [sampling_params.eos_token_id])
-                # itertools.product pairs each seq index with every token id
+                # itertools.product将每个序列索引与每个标记ID配对
                 logits_to_penalize.extend(
                     itertools.product(seqs_to_penalize, token_ids_to_penalize))
 
         start_idx += len(seq_ids)
 
     if logits_to_penalize:
-        # use zip and * to group indices along each dimension
-        # eg. [ (1,2), (1,3), (5,6) ] -> ( (1,1,5), (2,3,6) )
+        # 使用zip和*对每个维度的索引进行分组
+        # 例如 [ (1,2), (1,3), (5,6) ] -> ( (1,1,5), (2,3,6) )
         logits[tuple(zip(*logits_to_penalize))] = -float("inf")
 
     # verifies that no rows in logits were missed unexpectedly

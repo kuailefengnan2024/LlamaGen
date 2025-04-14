@@ -1,4 +1,4 @@
-# Modified from:
+# 修改自:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT
 #   nanoGPT: https://github.com/karpathy/nanoGPT
 import torch
@@ -27,7 +27,7 @@ from tokenizer.tokenizer_image.vq_model import VQ_models
 def main(args):
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     
-    # Setup DDP:
+    # 设置DDP:
     init_distributed_mode(args)
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
@@ -36,9 +36,9 @@ def main(args):
     torch.manual_seed(seed)
     torch.cuda.set_device(device)
 
-    # Setup an experiment folder:
+    # 设置实验文件夹:
     if rank == 0:
-        os.makedirs(args.results_dir, exist_ok=True)  # Make results folder (holds all experiment subfolders)
+        os.makedirs(args.results_dir, exist_ok=True)  # 创建结果文件夹（包含所有实验子文件夹）
         experiment_index = len(glob(f"{args.results_dir}/*"))
         model_string_name = args.gpt_model.replace("/", "-") 
         experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{model_string_name}"
@@ -56,14 +56,14 @@ def main(args):
     else:
         logger = create_logger(None)
 
-    # training args
+    # 训练参数
     logger.info(f"{args}")
 
-    # training env
+    # 训练环境
     logger.info(f"Starting rank={rank}, seed={seed}, world_size={dist.get_world_size()}.")
 
 
-    # Setup model
+    # 设置模型
     latent_size = args.image_size // args.downsample_size
     model = GPT_models[args.gpt_model](
         vocab_size=args.vocab_size,
@@ -77,11 +77,11 @@ def main(args):
     ).to(device)
     logger.info(f"GPT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
-    # Setup optimizer
+    # 设置优化器
     optimizer = creat_optimizer(model, args.weight_decay, args.lr, (args.beta1, args.beta2), logger)
 
-    # Setup data:
-    if args.dataset == 't2i':     # create and load model
+    # 设置数据:
+    if args.dataset == 't2i':     # 创建并加载模型
         vq_model = VQ_models[args.vq_model](
             codebook_size=args.codebook_size,
             codebook_embed_dim=args.codebook_embed_dim)
@@ -114,7 +114,7 @@ def main(args):
     )
     logger.info(f"Dataset contains {len(dataset):,} images")
 
-    # Prepare models for training:
+    # 准备模型进行训练:
     if args.gpt_ckpt:
         checkpoint = torch.load(args.gpt_ckpt, map_location="cpu")
         model.load_state_dict(checkpoint["model"], strict=True)
@@ -131,15 +131,15 @@ def main(args):
 
     if not args.no_compile:
         logger.info("compiling the model... (may take several minutes)")
-        model = torch.compile(model) # requires PyTorch 2.0        
+        model = torch.compile(model) # 需要PyTorch 2.0        
     
     model = DDP(model.to(device), device_ids=[args.gpu])
-    model.train()  # important! This enables embedding dropout for classifier-free guidance
+    model.train()  # 重要！这会启用嵌入dropout以进行无分类器引导
 
     ptdtype = {'none': torch.float32, 'bf16': torch.bfloat16, 'fp16': torch.float16}[args.mixed_precision]
-    # initialize a GradScaler. If enabled=False scaler is a no-op
+    # 初始化GradScaler。如果enabled=False，则scaler不执行任何操作
     scaler = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
-    # Variables for monitoring/logging purposes:
+    # 用于监控/日志记录的变量:
     log_steps = 0
     running_loss = 0
     start_time = time.time()
@@ -162,37 +162,37 @@ def main(args):
             attn_mask = attn_mask.reshape(attn_mask.shape[0], 1, attn_mask.shape[-2], attn_mask.shape[-1]) # (bs, n_head, seq_len, seq_len)
             with torch.cuda.amp.autocast(dtype=ptdtype):  
                 _, loss = model(cond_idx=c_indices, idx=z_indices[:,:-1], targets=z_indices, mask=attn_mask[:, :, :-1,:-1], valid=valid)
-            # backward pass, with gradient scaling if training in fp16         
+            # 反向传播，如果在fp16中训练则使用梯度缩放         
             scaler.scale(loss).backward()
             if args.max_grad_norm != 0.0:
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-            # step the optimizer and scaler if training in fp16
+            # 如果在fp16中训练，则执行优化器步骤和缩放器更新
             scaler.step(optimizer)
             scaler.update()
-            # flush the gradients as soon as we can, no need for this memory anymore
+            # 尽快刷新梯度，不再需要这个内存
             optimizer.zero_grad(set_to_none=True)
 
-            # Log loss values:
+            # 记录损失值:
             running_loss += loss.item()
             log_steps += 1
             train_steps += 1
             if train_steps % args.log_every == 0:
-                # Measure training speed:
+                # 测量训练速度:
                 torch.cuda.synchronize()
                 end_time = time.time()
                 steps_per_sec = log_steps / (end_time - start_time)
-                # Reduce loss history over all processes:
+                # 在所有进程中减少损失历史:
                 avg_loss = torch.tensor(running_loss / log_steps, device=device)
                 dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
                 avg_loss = avg_loss.item() / dist.get_world_size()
                 logger.info(f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, Train Steps/Sec: {steps_per_sec:.2f}")
-                # Reset monitoring variables:
+                # 重置监控变量:
                 running_loss = 0
                 log_steps = 0
                 start_time = time.time()
 
-            # Save checkpoint:
+            # 保存检查点:
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     if not args.no_compile:

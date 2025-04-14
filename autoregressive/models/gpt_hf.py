@@ -7,9 +7,9 @@ class TransformerHF(Transformer, PyTorchModelHubMixin, repo_url="https://github.
 
 
 #################################################################################
-#                                GPT Configs                                    #
+#                                GPT 配置                                       #
 #################################################################################
-### text-conditional
+### 文本条件模型
 def GPT_7B(**kwargs):
     return TransformerHF(ModelArgs(n_layer=32, n_head=32, dim=4096, **kwargs)) # 6.6B
 
@@ -19,7 +19,7 @@ def GPT_3B(**kwargs):
 def GPT_1B(**kwargs):
     return TransformerHF(ModelArgs(n_layer=22, n_head=32, dim=2048, **kwargs)) # 1.2B
 
-### class-conditional
+### 类别条件模型
 def GPT_XXXL(**kwargs):
     return TransformerHF(ModelArgs(n_layer=48, n_head=40, dim=2560, **kwargs)) # 3.9B
 

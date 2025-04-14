@@ -1,4 +1,4 @@
-# Modified from:
+# 修改自:
 #   fast-DiT: https://github.com/chuanyangjin/fast-DiT/blob/main/train.py
 #   nanoGPT: https://github.com/karpathy/nanoGPT/blob/master/model.py
 import torch
@@ -23,15 +23,15 @@ from autoregressive.models.gpt import GPT_models
 
 
 #################################################################################
-#                             Training Helper Functions                         #
+#                             训练辅助函数                                        #
 #################################################################################
 def creat_optimizer(model, weight_decay, learning_rate, betas, logger):
-    # start with all of the candidate parameters
+    # 首先获取所有候选参数
     param_dict = {pn: p for pn, p in model.named_parameters()}
-    # filter out those that do not require grad
+    # 过滤掉不需要梯度的参数
     param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
-    # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
-    # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
+    # 创建优化器组。任何2D参数都会进行权重衰减，否则不会。
+    # 即，所有矩阵乘法中的权重张量+嵌入会衰减，所有偏置和层归一化不会。
     decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
     nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
     optim_groups = [
@@ -42,7 +42,7 @@ def creat_optimizer(model, weight_decay, learning_rate, betas, logger):
     num_nodecay_params = sum(p.numel() for p in nodecay_params)
     logger.info(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
     logger.info(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
-    # Create AdamW optimizer and use the fused version if it is available
+    # 创建AdamW优化器，如果可用则使用融合版本
     fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
     extra_args = dict(fused=True) if fused_available else dict()
     optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args)
@@ -52,12 +52,12 @@ def creat_optimizer(model, weight_decay, learning_rate, betas, logger):
 
 
 #################################################################################
-#                                  Training Loop                                #
+#                                  训练循环                                       #
 #################################################################################
 def main(args):
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     
-    # Setup DDP:
+    # 设置DDP:
     init_distributed_mode(args)
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
@@ -66,13 +66,13 @@ def main(args):
     torch.manual_seed(seed)
     torch.cuda.set_device(device)
 
-    # Setup an experiment folder:
+    # 设置实验文件夹:
     if rank == 0:
-        os.makedirs(args.results_dir, exist_ok=True)  # Make results folder (holds all experiment subfolders)
+        os.makedirs(args.results_dir, exist_ok=True)  # 创建结果文件夹（包含所有实验子文件夹）
         experiment_index = len(glob(f"{args.results_dir}/*"))
-        model_string_name = args.gpt_model.replace("/", "-")  # e.g., GPT-XL/2 --> GPT-XL-2 (for naming folders)
-        experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{model_string_name}"  # Create an experiment folder
-        checkpoint_dir = f"{experiment_dir}/checkpoints"  # Stores saved model checkpoints
+        model_string_name = args.gpt_model.replace("/", "-")  # 例如，GPT-XL/2 --> GPT-XL-2（用于命名文件夹）
+        experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{model_string_name}"  # 创建实验文件夹
+        checkpoint_dir = f"{experiment_dir}/checkpoints"  # 存储保存的模型检查点
         os.makedirs(checkpoint_dir, exist_ok=True)
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory created at {experiment_dir}")
@@ -86,14 +86,14 @@ def main(args):
     else:
         logger = create_logger(None)
 
-    # training args
+    # 训练参数
     logger.info(f"{args}")
 
-    # training env
+    # 训练环境
     logger.info(f"Starting rank={rank}, seed={seed}, world_size={dist.get_world_size()}.")
 
 
-    # Setup model
+    # 设置模型
     if args.drop_path_rate > 0.0:
         dropout_p = 0.0
     else:
@@ -113,14 +113,14 @@ def main(args):
     logger.info(f"GPT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     if args.ema:
-        ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
+        ema = deepcopy(model).to(device)  # 创建模型的EMA版本，用于训练后使用
         requires_grad(ema, False)
         logger.info(f"EMA Parameters: {sum(p.numel() for p in ema.parameters()):,}")
 
-    # Setup optimizer
+    # 设置优化器
     optimizer = creat_optimizer(model, args.weight_decay, args.lr, (args.beta1, args.beta2), logger)
 
-    # Setup data:
+    # 设置数据:
     dataset = build_dataset(args)
     sampler = DistributedSampler(
         dataset,
@@ -144,7 +144,7 @@ def main(args):
     logger.info(f"Dataset contains {len(dataset):,} images ({args.code_path}) "
                 f"{flip_info} flip augmentation and {aug_info} crop augmentation")
 
-    # Prepare models for training:
+    # 准备模型进行训练:
     if args.gpt_ckpt:
         checkpoint = torch.load(args.gpt_ckpt, map_location="cpu")
         model.load_state_dict(checkpoint["model"])
@@ -161,21 +161,21 @@ def main(args):
         train_steps = 0
         start_epoch = 0
         if args.ema:
-            update_ema(ema, model, decay=0)  # Ensure EMA is initialized with synced weights
+            update_ema(ema, model, decay=0)  # 确保EMA使用同步权重进行初始化
 
     if not args.no_compile:
         logger.info("compiling the model... (may take several minutes)")
-        model = torch.compile(model) # requires PyTorch 2.0        
+        model = torch.compile(model) # 需要PyTorch 2.0        
     
     model = DDP(model.to(device), device_ids=[args.gpu])
-    model.train()  # important! This enables embedding dropout for classifier-free guidance
+    model.train()  # 重要！这会启用嵌入dropout以进行无分类器引导
     if args.ema:
-        ema.eval()  # EMA model should always be in eval mode
+        ema.eval()  # EMA模型应始终处于评估模式
 
     ptdtype = {'none': torch.float32, 'bf16': torch.bfloat16, 'fp16': torch.float16}[args.mixed_precision]
-    # initialize a GradScaler. If enabled=False scaler is a no-op
+    # 初始化GradScaler。如果enabled=False，则scaler不执行任何操作
     scaler = torch.cuda.amp.GradScaler(enabled=(args.mixed_precision =='fp16'))
-    # Variables for monitoring/logging purposes:
+    # 用于监控/日志记录的变量:
     log_steps = 0
     running_loss = 0
     start_time = time.time()
@@ -192,39 +192,39 @@ def main(args):
             assert z_indices.shape[0] == c_indices.shape[0]
             with torch.cuda.amp.autocast(dtype=ptdtype):  
                 _, loss = model(cond_idx=c_indices, idx=z_indices[:,:-1], targets=z_indices)
-            # backward pass, with gradient scaling if training in fp16         
+            # 反向传播，如果在fp16中训练则使用梯度缩放         
             scaler.scale(loss).backward()
             if args.max_grad_norm != 0.0:
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-            # step the optimizer and scaler if training in fp16
+            # 如果在fp16中训练，则执行优化器步骤和缩放器更新
             scaler.step(optimizer)
             scaler.update()
-            # flush the gradients as soon as we can, no need for this memory anymore
+            # 尽快刷新梯度，不再需要这个内存
             optimizer.zero_grad(set_to_none=True)
             if args.ema:
                 update_ema(ema, model.module._orig_mod if not args.no_compile else model.module)
 
-            # Log loss values:
+            # 记录损失值:
             running_loss += loss.item()
             log_steps += 1
             train_steps += 1
             if train_steps % args.log_every == 0:
-                # Measure training speed:
+                # 测量训练速度:
                 torch.cuda.synchronize()
                 end_time = time.time()
                 steps_per_sec = log_steps / (end_time - start_time)
-                # Reduce loss history over all processes:
+                # 在所有进程中减少损失历史:
                 avg_loss = torch.tensor(running_loss / log_steps, device=device)
                 dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
                 avg_loss = avg_loss.item() / dist.get_world_size()
                 logger.info(f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, Train Steps/Sec: {steps_per_sec:.2f}")
-                # Reset monitoring variables:
+                # 重置监控变量:
                 running_loss = 0
                 log_steps = 0
                 start_time = time.time()
 
-            # Save checkpoint:
+            # 保存检查点:
             if train_steps % args.ckpt_every == 0 and train_steps > 0:
                 if rank == 0:
                     if not args.no_compile:

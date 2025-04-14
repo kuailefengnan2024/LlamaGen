@@ -2,8 +2,8 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision('high')
-setattr(torch.nn.Linear, 'reset_parameters', lambda self: None)     # disable default parameter init for faster speed
-setattr(torch.nn.LayerNorm, 'reset_parameters', lambda self: None)  # disable default parameter init for faster speed
+setattr(torch.nn.Linear, 'reset_parameters', lambda self: None)     # 禁用默认参数初始化以加快速度
+setattr(torch.nn.LayerNorm, 'reset_parameters', lambda self: None)  # 禁用默认参数初始化以加快速度
 from torchvision.utils import save_image
 
 import os
@@ -18,14 +18,14 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def main(args):
-    # Setup PyTorch:
+    # 设置PyTorch:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.set_grad_enabled(False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # create and load model
+    # 创建并加载模型
     vq_model = VQ_models[args.vq_model](
         codebook_size=args.codebook_size,
         codebook_embed_dim=args.codebook_embed_dim)
@@ -36,7 +36,7 @@ def main(args):
     del checkpoint
     print(f"image tokenizer is loaded")
 
-    # create and load gpt model
+    # 创建并加载gpt模型
     precision = {'none': torch.float32, 'bf16': torch.bfloat16, 'fp16': torch.float16}[args.precision]
     latent_size = args.image_size // args.downsample_size
     gpt_model = GPT_models[args.gpt_model](
@@ -66,7 +66,7 @@ def main(args):
             gpt_model,
             mode="reduce-overhead",
             fullgraph=True
-        ) # requires PyTorch 2.0 (optional)
+        ) # 需要PyTorch 2.0（可选）
     else:
         print(f"no need to compile model in demo") 
     
@@ -91,7 +91,7 @@ def main(args):
 
     if not args.no_left_padding:
         print(f"processing left-padding...")    
-        # a naive way to implement left-padding
+        # 实现左填充的简单方法
         new_emb_masks = torch.flip(emb_masks, dims=[-1])
         new_caption_embs = []
         for idx, (caption_emb, emb_mask) in enumerate(zip(caption_embs, emb_masks)):
@@ -118,7 +118,7 @@ def main(args):
     print(f"Full sampling takes about {sampling_time:.2f} seconds.")    
     
     t2 = time.time()
-    samples = vq_model.decode_code(index_sample, qzshape) # output value is between [-1, 1]
+    samples = vq_model.decode_code(index_sample, qzshape) # 输出值在[-1, 1]之间
     decoder_time = time.time() - t2
     print(f"decoder takes about {decoder_time:.2f} seconds.")
 
@@ -136,21 +136,21 @@ if __name__ == "__main__":
     parser.add_argument("--no-left-padding", action='store_true', default=False)
     parser.add_argument("--gpt-model", type=str, choices=list(GPT_models.keys()), default="GPT-XL")
     parser.add_argument("--gpt-ckpt", type=str, default=None)
-    parser.add_argument("--gpt-type", type=str, choices=['c2i', 't2i'], default="t2i", help="class->image or text->image")  
-    parser.add_argument("--cls-token-num", type=int, default=120, help="max token number of condition input")
+    parser.add_argument("--gpt-type", type=str, choices=['c2i', 't2i'], default="t2i", help="类别->图像或文本->图像")  
+    parser.add_argument("--cls-token-num", type=int, default=120, help="条件输入的最大标记数")
     parser.add_argument("--precision", type=str, default='bf16', choices=["none", "fp16", "bf16"]) 
     parser.add_argument("--compile", action='store_true', default=False)
     parser.add_argument("--vq-model", type=str, choices=list(VQ_models.keys()), default="VQ-16")
-    parser.add_argument("--vq-ckpt", type=str, default=None, help="ckpt path for vq model")
-    parser.add_argument("--codebook-size", type=int, default=16384, help="codebook size for vector quantization")
-    parser.add_argument("--codebook-embed-dim", type=int, default=8, help="codebook dimension for vector quantization")
+    parser.add_argument("--vq-ckpt", type=str, default=None, help="vq模型的检查点路径")
+    parser.add_argument("--codebook-size", type=int, default=16384, help="向量量化的码本大小")
+    parser.add_argument("--codebook-embed-dim", type=int, default=8, help="向量量化的码本维度")
     parser.add_argument("--image-size", type=int, choices=[256, 384, 512], default=512)
     parser.add_argument("--downsample-size", type=int, choices=[8, 16], default=16)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale", type=float, default=7.5)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--top-k", type=int, default=1000, help="top-k value to sample with")
-    parser.add_argument("--temperature", type=float, default=1.0, help="temperature value to sample with")
-    parser.add_argument("--top-p", type=float, default=1.0, help="top-p value to sample with")
+    parser.add_argument("--top-k", type=int, default=1000, help="采样使用的top-k值")
+    parser.add_argument("--temperature", type=float, default=1.0, help="采样使用的温度值")
+    parser.add_argument("--top-p", type=float, default=1.0, help="采样使用的top-p值")
     args = parser.parse_args()
     main(args)
