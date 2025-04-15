@@ -1,3 +1,18 @@
+"""
+模型执行器模块：autoregressive/serve/model_runner.py
+用途：高效执行模型推理并管理计算资源
+功能：
+1. 加载和初始化自回归GPT模型
+2. 管理模型的CUDA图优化和内存分配
+3. 实现批处理策略和推理优化
+4. 处理前向传播和KV缓存管理
+5. 支持LoRA参数切换和多模态输入处理
+
+该模块是LlamaGen项目服务架构的执行引擎，
+负责高效地运行模型推理过程，
+优化底层CUDA操作以获得最佳性能。
+"""
+
 import contextlib
 import time
 from enum import IntEnum

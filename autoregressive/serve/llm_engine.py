@@ -1,3 +1,18 @@
+"""
+LLM引擎核心模块：autoregressive/serve/llm_engine.py
+用途：实现高性能的大语言模型服务引擎
+功能：
+1. 协调模型加载、推理执行和资源管理
+2. 处理批量请求调度和响应生成
+3. 管理分布式执行和张量并行
+4. 统计性能指标和资源使用情况
+5. 支持LoRA、量化和多模态输入
+
+该模块是LlamaGen项目服务架构的中枢组件，
+负责高效调度和执行生成请求，
+扩展了vLLM的引擎以适应LlamaGen的特定需求。
+"""
+
 # Modified from:
 #   vLLM:    https://github.com/vllm-project/vllm/blob/main/vllm/engine/llm_engine.py
 import time

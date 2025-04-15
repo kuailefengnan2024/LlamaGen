@@ -1,3 +1,14 @@
+"""
+该模块为DeepSpeed分布式训练框架提供配置生成功能。
+在LlamaGen项目中，此模块主要负责：
+1. 根据命令行参数动态生成DeepSpeed配置
+2. 支持不同的ZeRO优化级别（stage 0-3）配置
+3. 配置混合精度训练、梯度裁剪和优化器参数
+
+DeepSpeed框架显著降低了大规模模型训练的内存需求，提高了训练效率，
+该模块确保LlamaGen项目能够充分利用DeepSpeed的高级优化功能进行高效训练。
+"""
+
 def create_deepspeed_config(args):
     ds_config = {
         "steps_per_print": 1000,

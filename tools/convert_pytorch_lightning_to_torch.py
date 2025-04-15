@@ -1,3 +1,14 @@
+"""
+该脚本用于将PyTorch Lightning格式的模型权重转换为标准PyTorch格式。
+在LlamaGen项目中，此脚本的主要作用是：
+1. 处理从PyTorch Lightning框架训练的向量量化(VQ)模型
+2. 转换权重格式，使其与标准PyTorch兼容
+3. 简化模型权重的加载过程，移除不必要的Lightning特定结构
+
+此转换对于项目中使用预训练VQ模型进行图像编码和生成至关重要，
+确保模型可以在不依赖PyTorch Lightning的环境中正常使用。
+"""
+
 import os
 import torch
 

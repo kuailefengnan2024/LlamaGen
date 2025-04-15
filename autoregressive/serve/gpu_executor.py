@@ -1,3 +1,18 @@
+"""
+GPU执行器模块：autoregressive/serve/gpu_executor.py
+用途：管理GPU上的模型执行和资源分配
+功能：
+1. 协调模型在单GPU环境下的执行
+2. 管理KV缓存的初始化和分配
+3. 处理模型执行的同步和异步接口
+4. 支持推测解码的初始化和执行
+5. 提供LoRA参数的动态加载和卸载
+
+该模块是LlamaGen项目服务架构的执行层组件，
+作为LLM引擎和底层Worker之间的桥梁，
+简化了单GPU环境下的模型执行流程。
+"""
+
 from typing import Dict, List, Set, Tuple, Optional, Set
 import argparse
 

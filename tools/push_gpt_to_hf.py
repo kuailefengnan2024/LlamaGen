@@ -1,3 +1,14 @@
+"""
+该脚本用于将GPT模型上传到Hugging Face Hub并加载模型进行测试。
+在LlamaGen项目中，此脚本主要负责：
+1. 加载本地训练的GPT模型权重（支持多种模型格式：DDP、FSDP、DeepSpeed等）
+2. 将模型转换为HuggingFace兼容格式并上传到Hub
+3. 验证上传的模型是否可以正确从Hub加载
+
+这个脚本对于模型分享和部署至关重要，使研究人员和开发者能够轻松获取
+预训练的LlamaGen模型，用于图像生成任务。
+"""
+
 # Modified from:
 #   DiT:  https://github.com/facebookresearch/DiT/blob/main/sample_ddp.py
 import torch

@@ -1,4 +1,15 @@
 """
+该脚本用于将自定义PyTorch模型上传到Hugging Face Hub以及从Hub下载模型。
+在LlamaGen项目中，此脚本主要负责：
+1. 将经过训练的向量量化(VQ)模型上传到Hugging Face Hub
+2. 提供简单的接口从Hub加载预训练模型
+3. 确保模型权重的版本控制和可共享性
+
+通过此脚本，项目可以轻松地分享和重用模型权重，使其他研究人员能够重现结果
+或在预训练模型的基础上进一步开发。
+"""
+
+"""
 Script to push and load custom PyTorch models to/from the Hugging Face Hub.
 """
 

@@ -1,3 +1,14 @@
+"""
+该脚本用于绘制研究实验结果的图表和可视化。
+在LlamaGen项目中，此脚本主要负责：
+1. 绘制模型性能的缩放规律图表（无CFG和有CFG条件下）
+2. 可视化采样参数（如top-k和cfg值）对生成质量的影响
+3. 对比不同模型大小和训练周期的FID分数和Inception分数
+
+这些图表对于分析模型性能、评估实验结果和制作研究论文/报告的数据可视化至关重要，
+帮助直观地展示LlamaGen在不同配置下的生成质量。
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 

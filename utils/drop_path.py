@@ -1,3 +1,14 @@
+"""
+该模块实现深度随机路径丢弃（Stochastic Depth）功能。
+在LlamaGen项目中，此模块主要负责：
+1. 提供网络训练中的正则化技术，减少过拟合
+2. 通过在残差网络的主路径上随机丢弃整个路径来提高训练效率和模型泛化能力
+3. 为深层网络提供更稳定的训练过程
+
+这种技术特别适用于项目中的深层Transformer架构，可以在保持性能的同时
+显著提高训练速度并减少内存消耗。
+"""
+
 # from timm.models.layers import DropPath
 import torch
 

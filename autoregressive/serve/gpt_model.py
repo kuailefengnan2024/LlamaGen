@@ -1,3 +1,18 @@
+"""
+GPT模型定义模块：autoregressive/serve/gpt_model.py
+用途：定义LlamaGen项目中的自回归GPT模型架构和配置
+功能：
+1. 实现各种规模的GPT模型架构（从GPT-B到GPT-7B）
+2. 支持类别条件和文本条件图像生成
+3. 提供模型参数配置和初始化
+4. 适配vLLM高性能推理引擎
+5. 实现注意力机制、前馈网络和位置编码等核心组件
+
+该模块是LlamaGen项目的核心组件之一，
+定义了用于自回归生成的模型结构，
+特别优化用于图像生成任务，支持类别条件（c2i）和文本条件（t2i）。
+"""
+
 from dataclasses import dataclass
 from typing import Optional, List
 
