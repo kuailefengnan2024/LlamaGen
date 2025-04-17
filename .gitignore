@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # Pretrained models
-pretained models/
+pretrained_models/
 *.pt
 *.pth
 *.h5

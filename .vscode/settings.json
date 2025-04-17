@@ -1,0 +1,19 @@
+{
+    "python.defaultInterpreterPath": "~/.conda/envs/LlamaGen/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.condaPath": "conda",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "--line-length", 
+        "100"
+    ],
+    "editor.formatOnSave": true,
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder}"
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ]
+} 

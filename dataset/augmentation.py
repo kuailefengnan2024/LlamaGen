@@ -1,3 +1,24 @@
+"""
+图像增强模块。
+此脚本提供了各种图像增强和处理函数，用于数据预处理和增强。
+主要包含两个核心函数：
+1. center_crop_arr: 中心裁剪图像
+2. random_crop_arr: 随机裁剪图像
+这些功能改编自OpenAI的guided-diffusion项目。
+
+用途:
+- 扩增训练数据集
+- 提高模型泛化能力
+- 防止过拟合
+- 标准化图像输入尺寸
+
+特色:
+- 高质量的图像下采样，保持视觉质量
+- 支持中心裁剪和随机裁剪
+- 智能缩放算法，适应不同尺寸的输入图像
+- 保留原始图像的关键视觉特征
+- 与扩散模型训练优化兼容
+"""
 # from https://github.com/openai/guided-diffusion/blob/8fb3ad9197f16bbc40620447b2742e13458d2831/guided_diffusion/image_datasets.py
 import math
 import random
